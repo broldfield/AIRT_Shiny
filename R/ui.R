@@ -14,20 +14,25 @@ library(thematic)
 library(ggthemes)
 library(DT)
 
+library(reshape2)
+library(gghighlight)
+library(dplyr)
+library(ggpubr)
 
 
 fluidPage(
   shinyjs::useShinyjs(),
   theme = bs_theme(bootswatch = "cerulean"),
-  
+  inlineCSS("p{ max-width: 900px;}"),
+
   # Html Styling
   style = "background-color: #f5f5f5; padding-bottom: 10px; min-height: 100vh;",
-  
+
   # The wild wild world of Html and inline css
-  
+
   # Nav Bar styling
   div(
-    style = " margin-bottom: -30px; width:100%; max-width: 1500px;margin-left: auto; margin-right: auto; box-shadow: 7px 7px 3px #cdcdcd;  overflow: none;",
+    style = " margin-bottom: -30px; width:100%; max-width: 1500px; margin-left: auto; margin-right: auto; box-shadow: 7px 7px 3px #cdcdcd; overflow: none;",
     navbarPage(
       title = "AIRT",
       collapsible = TRUE,
@@ -38,34 +43,31 @@ fluidPage(
         style = "margin: 30px 30px;"
       ),
     ),
-    
   ),
-  
+
   # Middle Column Styling
   div(
     style = "background-color: white ;padding-top: 10px; max-width: 1000px; margin: auto;box-shadow: 7px 7px 3px #cdcdcd;",
     div(
       style = "margin: 15px;",
-      div(style = "border-bottom-style: solid; border-bottom-color: lightgrey;",
-          titlePanel("AIRT Processor")),
-      
+      div(
+        style = "border-bottom-style: solid; border-bottom-color: lightgrey;",
+        titlePanel("AIRT Processor")
+      ),
       br(),
-      
       div(
         style = "display: flex; justify-content: space-between;",
-        
-        
         div(
           style = "flex: 10;",
           # About Section
-          
-      h3("About AIRT"),
+
+          h3("About AIRT"),
           p(
             style = "max-width: 90%;",
             "The ",
             em("airt"),
             " package is used to evaluate the performance of a portfolio of algorithms using ",
-            strong("Item Response Theory") ,
+            strong("Item Response Theory"),
             " (IRT). ",
             br(),
             "AIRT currently fits to two data models: Continuous and Polytomous (categorical).",
@@ -76,23 +78,22 @@ fluidPage(
           p("AIRT Shiny App Creator: Brodie Oldfield (Data61, CSIRO)"),
           p(
             "The University of Melbourne's ",
-            tags$a(href = "https://matilda.unimelb.edu.au/matilda/" , "MATILDA"),
+            tags$a(href = "https://matilda.unimelb.edu.au/matilda/", "MATILDA"),
             " research platform for the example data."
           ),
-          
-          
-          
         ),
-        div(style = "flex: 4; padding-left: 20px; justify-self: center; padding-right: 10px;",
-            img(
-              src = "logo.png", alt = "airt logo", height = "250px"
-            )),
+        div(
+          style = "flex: 4; padding-left: 20px; justify-self: center; padding-right: 10px;",
+          img(
+            src = "logo.png", alt = "airt logo", height = "250px"
+          )
+        ),
       ),
-      
-      
+
+
       # Data Format Section
       h3("Data Format"),
-      
+
       # Example Table
       p(
         style = "max-width: 900px;",
@@ -101,11 +102,10 @@ fluidPage(
       div(
         style = "margin: auto; max-width: 500px;",
         uiOutput("exampleTable", style = "width: 100%; overflow:none; padding-bottom: 10px;"),
-        
         em("Note: Numerics are displayed to 4 decimal places in tables."),
       ),
       br(),
-      
+
       # Upload Section
       div(
         style = "border-bottom-style: dotted; border-bottom-color: #edebeb; ",
@@ -113,72 +113,91 @@ fluidPage(
         p(
           "Upload .csv or use an example file.",
           br(),
-          "Uncheck Scale Data when data is Time (seconds)."
+          strong("Scale Data:"), "Data is by default scaled between 0 and 1. Uncheck to disable.",
+          br(),
+          strong("Invert Data:"), "Inverts the dataset. Apply this when lower values indicate better performance in your data.",
+          br(),
+          strong("Scale Method:"), "Whether to apply scaling per column or for all data. Disabled when Scale Data is disabled."
         ),
-        
-        
-        fluidRow(column(
-          4,
-          checkboxInput("scaleData", "Scale Data", value = TRUE),
+        fluidRow(
+          column(
+            4,
+            checkboxInput("scaleData", "Scale Data", value = TRUE),
+          ),
+          column(
+            4,
+            checkboxInput("invertData", "Invert Data", value = FALSE),
+          ),
+          column(
+            4,
+            radioButtons(
+              "scaleMethod",
+              NULL,
+              c(
+                "By Column" = "single",
+                "All" = "multiple"
+              )
+            ),
+          )
         ),
-        column(4,
-               radioButtons(
-                 "scaleMethod",
-                 NULL,
-                 c("By Column" = "single",
-                   "All" = "multiple")
-               ),)),
-        
-        div(style = "padding-bottom: 30px;",
-            fluidRow(
-              column(4,
-                     
-                     fileInput("upload", NULL, accept = ".csv"),),
-              column(4,
-                     selectizeInput(
-                       "exampleFile",
-                       NULL,
-                       choices = c(
-                         "Select Example File",
-                         "Anomaly Detection",
-                         "MaxCut Graph",
-                         "Classification"
-                       ),
-                     ),)
-            ), ),
+        div(
+          style = "padding-bottom: 30px;",
+          fluidRow(
+            column(
+              4,
+              fileInput("upload", NULL, accept = ".csv"),
+            ),
+            column(
+              4,
+              selectizeInput(
+                "exampleFile",
+                NULL,
+                choices = c(
+                  "Select Example File",
+                  "Anomaly Detection",
+                  "MaxCut Graph",
+                  "Classification",
+                  "Time Series Forecasting",
+                  "Clustering"
+                ),
+              ),
+            )
+          ),
+        ),
         div(
           style = "padding-bottom: 50px;",
           actionButton("compute",
-                       style = "margin: 0 auto; display: block; color: #edebeb; border-radius: 2px;",
-                       "Compute",
-                       class = "btn-primary btn-lg", ),
+            style = "margin: 0 auto; display: block; color: #edebeb; border-radius: 2px;",
+            "Compute",
+            class = "btn-primary btn-lg",
+          ),
         ),
         br(),
       ),
       br(),
-      
       hidden(
         div(
           id = "downloadDiv",
+          class = "hidden",
           style = "padding-bottom: 20px",
           h3("Download"),
           p(
             "Downloads generated Tables and Plot Images. Resets when new data is loaded."
           ),
           downloadButton("downlBtn",
-                         "Download.tar",
-                         icon = shiny::icon("download")),
+            "Download.tar",
+            icon = shiny::icon("download")
+          ),
         )
       ),
-      
+
       # Paras Table
       hidden(
         div(
           id = "parasDiv",
+          class = "hidden",
           style = "padding-bottom: 50px; padding-top: 25px;",
-          
           h3(id = "parasTitle", "Algorithm Performance Data"),
-          
           p(
             style = "max-width: 900px;",
             "This table displays traditional IRT parameters for each algorithm, where ",
@@ -197,7 +216,6 @@ fluidPage(
             style = "max-width: 900px;",
             "These parameters are used to find the AIRT algorithm attributes: ",
             em("anomalousness,"),
-            
             em("consistency,"),
             " and ",
             em("the difficulty limit.")
@@ -206,34 +224,59 @@ fluidPage(
           br(),
         )
       ),
-      
+
       # Anomaly Table
       hidden(
         div(
           id = "anomDiv",
+          class = "hidden",
           style = "padding-bottom: 50px;",
           h3("AIRT Attributes"),
+          h5("Anomalous"),
           p(
-            "If an algorithm is anomalous then the anomalousness attribute is 1."
+            "The anomalous attribute signifies an algorithm as anomalous (1) or standard (0). Anomalous algorithms excel with difficult datasets but struggle with easy datasets. Standard algorithms perform well with easy datasets and poorly with difficult ones."
           ),
+          h5("Difficultly limit"),
+          p(
+            "The difficultly limit attribute tells us the highest difficulty level the algorithm can handle. If an algorithm has a high difficulty limit value, then it can handle very hard problems, while a low value is less performant on harder questions.",
+            br(),
+            "Additionally, a negative difficulty limit value indicates that the algorithm is anomalous."
+          ),
+          h5("Consistency"),
+          p(
+            "The consistency attribute indicates an algorithm's stability in its difficulty level. A low consistency Algorithm has fluctuating performance while a high consistency shows limited fluctuations."
+          ),
+          br(),
           div(
             style = "margin: auto; max-width: 500px ;",
             uiOutput("anomal", style = "width: 100%; overflow:none;"),
+            em("Click on a row for more information."),
+          ),
+          hidden(
+            div(
+              id = "anomBoxplotDiv",
+              class = "hidden",
+              style = "margin: auto; max-width: 500px ; padding-top: 10px",
+              h5("Boxplot"),
+              uiOutput("anomBoxplot", style = "width: 100%; overflow:none;"),
+              em("The selected algorithm is highlighted. A distant mix/max value may distort the graph."),
+            )
           ),
           actionButton("anomalCont", "Next"),
           br(),
         )
       ),
-      
+
       # Heat Map
       hidden(
         div(
           id = "heatMapDiv",
+          class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Heat Map"),
           p(
             style = "max-width: 900px;",
-            "The Theta (x axis) represents the dataset easiness and the z (y axis) represents the normalized performance values. The heatmaps show the probability density of the fitted IRT model over Theta and z values for each algorithm."
+            "The Theta (x axis) represents the dataset easiness, and the z (y axis) represents the normalized performance values. The heatmaps show the probability density of the fitted IRT model over Theta and z values for each algorithm."
           ),
           uiOutput("heatMap"),
           p(
@@ -247,11 +290,12 @@ fluidPage(
           actionButton("heatMapCont", "Next"),
         )
       ),
-      
+
       # Plot Type 1 and 2
       hidden(
         div(
           id = "auto1And2Div",
+          class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Problem Difficulty Space and Algorithm Performance"),
           p(
@@ -267,27 +311,37 @@ fluidPage(
           actionButton("auto1And2Cont", "Next"),
         )
       ),
-      
+
       # Plot Type 3
       hidden(
         div(
           id = "auto3Div",
+          class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Spline"),
           p(
             "To get a better sense of which algorithms are better for which difficulty values, we can fit smoothing splines to the above data."
           ),
+          selectInput(
+            "splineSelectAlgo",
+            "Select Algorithm",
+            choices = NULL,
+            selectize = TRUE
+          ),
+          actionButton("resetSpline", "Reset"),
           uiOutput("auto3"),
-          
+          # create a dropdown menu for the user to select the algorithm
+
           actionButton("auto3Cont", "Next"),
           br(),
         )
       ),
-      
+
       # Plot Type 4
       hidden(
         div(
           id = "auto4Div",
+          class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Strengths and Weaknesses of Algorithms"),
           p(
@@ -305,14 +359,17 @@ fluidPage(
           actionButton("auto4Cont", "Next"),
         )
       ),
-      
+
       # Goodness and Eff Plots 1-3
       hidden(
         div(
           id = "goodnessEffDiv",
+          class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
-          h2(style = "color: black;",
-             "Is this a good model?"),
+          h2(
+            style = "color: black;",
+            "Is this a good model?"
+          ),
           h3("Model Goodness Metrics"),
           p(
             "All this is good, but is the fitted IRT model good? To check this, we have a couple of measures."
@@ -322,8 +379,7 @@ fluidPage(
               "Goodness",
               uiOutput("goodnessPlot"),
               p(
-                "One is the Model Goodness Curve, where we are looking at the distribution of errors - that is, the difference between the predicted and the actual values for different algorithms."
-                ,
+                "One is the Model Goodness Curve, where we are looking at the distribution of errors - that is, the difference between the predicted and the actual values for different algorithms.",
                 br(),
                 "The x-axis has the absolute error scaled to [0,1] and the y-axis shows the empirical cumulative distribution of errors for each algorithm. For a given algorithm, a model is well fitted if the curve goes up to 1 on the y-axis quickly.",
                 br(),
@@ -348,7 +404,7 @@ fluidPage(
               "Actual vs Predicted",
               uiOutput("modEff3"),
               p(
-                "Here we can see how the actual and the predicted sit together. Here AUPEC means Area Under Predicted Effectiveness Curve and AUAEC means Area Under Actual Effectiveness Curve." ,
+                "Here we can see how the actual and the predicted sit together. Here AUPEC means Area Under Predicted Effectiveness Curve and AUAEC means Area Under Actual Effectiveness Curve.",
                 br(),
                 "The IRT model has fitted the algorithms well if the points are close to the y = x line, shown as a dotted line."
               ),
@@ -356,7 +412,6 @@ fluidPage(
           ),
         )
       ),
-      
     ),
   ),
 )
