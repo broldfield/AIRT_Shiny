@@ -1,12 +1,14 @@
 # Generates plots, epsilon != to use epsilon.
-generatePlot <- function(plotNum, epsilonIn) {
-  if (epsilonIn == 0) {
-    obj <- getObj0Per()
-  } else {
-    obj <- getObj5Per()
-  }
+generatePlot <- function(plotNum, epsilonIn = "0") {
+  obj <- NULL
+  obj <- switch(epsilonIn,
+    "0" = getObj0Per(),
+    "0.01" = getObj1Per(),
+    "0.03" = getObj3Per(),
+    getObj0Per()
+  )
 
-  autoplot(obj, plottype = plotNum, epsilon = epsilonIn) + theme_pander(boxes = TRUE, gc = "lightgray")
+  autoplot(obj, plottype = plotNum, epsilon = as.numeric(epsilonIn)) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
 

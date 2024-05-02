@@ -119,6 +119,7 @@ fluidPage(
           br(),
           strong("Scale Method:"), "Whether to apply scaling per column or for all data. Disabled when Scale Data is disabled."
         ),
+        h5("Modifiers"),
         fluidRow(
           column(
             4,
@@ -134,12 +135,13 @@ fluidPage(
               "scaleMethod",
               NULL,
               c(
-                "By Column" = "single",
-                "All" = "multiple"
+                "All" = "multiple",
+                "By Column" = "single"
               )
             ),
           )
         ),
+        h5("Data Selection"),
         div(
           style = "padding-bottom: 30px;",
           fluidRow(
@@ -161,6 +163,12 @@ fluidPage(
                   "Clustering"
                 ),
               ),
+            )
+          ),
+          hidden(
+            div(
+              id = "invertText",
+              em("The Time Series Forecasting file should be selected with 'Invert Data' ticked."),
             )
           ),
         ),
@@ -259,7 +267,7 @@ fluidPage(
               style = "margin: auto; max-width: 500px ; padding-top: 10px",
               h5("Boxplot"),
               uiOutput("anomBoxplot", style = "width: 100%; overflow:none;"),
-              em("The selected algorithm is highlighted. A distant mix/max value may distort the graph."),
+              uiOutput("anomBoxplotText"),
             )
           ),
           actionButton("anomalCont", "Next"),
@@ -302,6 +310,7 @@ fluidPage(
             "We can look at the algorithm performance with respect to the dataset difficulty, which is called the Latent Trait Analysis."
           ),
           tabsetPanel(
+            id = "auto1And2Tabs",
             tabPanel("Merged", uiOutput("auto1")),
             tabPanel("Seperate", uiOutput("auto2"))
           ),
@@ -322,13 +331,22 @@ fluidPage(
           p(
             "To get a better sense of which algorithms are better for which difficulty values, we can fit smoothing splines to the above data."
           ),
-          selectInput(
-            "splineSelectAlgo",
-            "Select Algorithm",
-            choices = NULL,
-            selectize = TRUE
+          div(
+            style = "display: flex; align-items: flex-end;",
+            div(
+              style = "",
+              selectInput(
+                "splineSelectAlgo",
+                "Select Algorithm:",
+                choices = NULL,
+                selectize = TRUE
+              )
+            ),
+            div(
+              style = "padding-bottom: 15px; padding-left: 10px;",
+              actionButton("resetSpline", "Reset Selection")
+            )
           ),
-          actionButton("resetSpline", "Reset"),
           uiOutput("auto3"),
           # create a dropdown menu for the user to select the algorithm
 
@@ -345,16 +363,25 @@ fluidPage(
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Strengths and Weaknesses of Algorithms"),
           p(
-            "To see the best and worst algorithms for a given problem difficulty, the splines above are used to compute the proportion of the Latent Trait Spectrum occupied by each algorithm. This is called the Latent Trait Occupancy (LTO)."
+            "To see the best and worst algorithms for a given problem difficulty, the splines above are used to compute the proportion of the Latent Trait Spectrum occupied by each algorithm. This is called the Latent Trait Occupancy (LTO).",
+            br(),
+            "The selectable Epsilon value, which when Non-Zero, shows the algorithms that overlap in the same problem difficulty. A higher Epsilon value increases the range of shown algorithms."
           ),
-          tabsetPanel(
-            tabPanel("No Overlap", uiOutput("auto4")),
-            tabPanel("Overlap", uiOutput("auto4Ep"))
+          fluidRow(
+            column(
+              1,
+              div(
+                style = "height: 100%; display: flex; align-items: center;",
+                radioButtons("epsilonAuto4", "Epsilon:", choices = c("0", "0.01", "0.03"))
+              )
+            ),
+            column(
+              10,
+              uiOutput("auto4")
+            )
           ),
           p(
             "We can see the Latent Trait Occupancy in this graph. Each algorithm occupies parts of the Latent Trait Spectrum as shown by a bar. This shows that for some dataset easiness values certain algorithms perform best in that difficulty, or that they are weaker than others.",
-            br(),
-            "In the 'Overlap' tab we may see that some algorithms have overlapping strengths at the same problem difficulty."
           ),
           actionButton("auto4Cont", "Next"),
         )

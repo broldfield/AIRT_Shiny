@@ -1,4 +1,4 @@
-getData <- function(){
+getData <- reactive({
   df <- ""
   if (userUpload()) {
     df <- uploadedCsv()
@@ -31,7 +31,6 @@ getData <- function(){
       maxItem(max_val)
       df <- df * (-1)
       df <- df + (max_val)
-      print(df)
       return(df)
     }
 
@@ -40,18 +39,18 @@ getData <- function(){
 
     return(df)
   }
-}
+})
 
-uploadedCsv <- function() {
+uploadedCsv <- reactive({
   csv <- read.csv(input$upload$datapath)
-}
+})
 
 getParas <- reactive({
   modout <- getModout()
   paras <- modout$model$param
 })
 
-getObj0Per <- function(){
+getObj0Per <- reactive({
   df <- getData()
   modout <- getModout()
   scale <- scaleSelected()
@@ -67,31 +66,49 @@ getObj0Per <- function(){
     max.item = max_val
   )
   return(obj)
-}
+})
 
-getObj5Per <- function(){
+getObj1Per <- reactive({
   df <- getData()
+  modout <- getModout()
   scale <- scaleSelected()
   scaleMethod <- scaleMethod()
   max_val <- maxItem()
-  modout <- getModout()
 
   obj <- latent_trait_analysis(
     df,
     paras = modout$model$param,
-    epsilon = 0.02,
+    epsilon = 0.01,
     scale = scale,
     scale.method = scaleMethod,
     max.item = max_val
   )
   return(obj)
-}
+})
 
-getModout <- function(){
+getObj3Per <- reactive({
+  df <- getData()
+  modout <- getModout()
+  scale <- scaleSelected()
+  scaleMethod <- scaleMethod()
+  max_val <- maxItem()
+
+  obj <- latent_trait_analysis(
+    df,
+    paras = modout$model$param,
+    epsilon = 0.03,
+    scale = scale,
+    scale.method = scaleMethod,
+    max.item = max_val
+  )
+  return(obj)
+})
+
+getModout <- reactive({
   df <- getData()
   modout <- cirtmodel(df, scale = scaleSelected(), scale.method = scaleMethod(), max.item = maxItem())
   return(modout)
-}
+})
 
 getModGood <- reactive({
   modGood <- model_goodness_crm(getModout())
@@ -106,7 +123,7 @@ getLongObj <- reactive({
   dfl <- obj$longdf
 })
 
-getColNames <- function(){
+getColNames <- function() {
   df <- getData()
   return(colnames(df))
 }

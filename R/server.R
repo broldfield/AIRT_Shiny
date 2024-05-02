@@ -1,24 +1,16 @@
-# TODO: Convert showParas to a function so that it gets updated on reload.
-# TODO: Update colnames when a new csv is selected.
-# TODO: Look at the best way to add interactivty to paras, graph 1 and the effectiveness graphs.
-# TODO: Update timeseries.
-# TODO: Add in titles for each graph.
-# TODO: Maybe add back hiding everything to prevent computation.
-
 library(shiny)
+
+load("data/MaxCut.rda")
+load("data/Anomaly.rda")
+load("data/Classification.rda")
+load("data/TimeSeriesForecasting.rda")
+load("data/Clustering.rda")
 
 function(input, output, session) {
   # With the DT package, you can use "x_rows_selected" to get the clicked on row.
   # Where x = the renderDT's output ID
   # When using renderDT in a renderUI, you need to use the session$ns to construct the ID
   ns <- session$ns
-
-  load("data/MaxCut.rda")
-  load("data/Anomaly.rda")
-  load("data/Classification.rda")
-  load("data/TimeSeriesForecasting.rda")
-  load("data/Clustering.rda")
-
 
   source("genPlot.R", local = TRUE)
   source("getters.R", local = TRUE)
@@ -51,42 +43,70 @@ function(input, output, session) {
 
     # Needs delay to give time for height to adjust for scroll.
     delay(
-      200,
+      100,
       runjs(string)
     )
   }
-  
-  hideAll = function() {
+
+  hideAll <- function() {
     hide(selector = "div.hidden")
   }
+
+  # Caching increeases memory by wayyyy too much
+  # cache <- reactiveValues()
+
+  # # Define a function that gets a value from the cache or calculates it if it's not in the cache
+  # generatePlotCached <- function(n, epsilonIn) {
+  #   csvName <- csvChoice()
+  #   # Create a key for the cache
+  #   key <- paste(n, epsilonIn, csvName, sep = "_")
+
+  #   # Check if the value is in the cache
+  #   if (key %in% names(cache)) {
+  #     # Return the cached value
+  #     return(cache[[key]])
+  #   } else {
+  #     # Calculate the value
+  #     value <- generatePlot(n, epsilonIn, csv)
+
+  #     # Store the value in the cache
+  #     cache[[key]] <- value
+
+  #     # Return the value
+  #     return(value)
+  #   }
+  # }
 
 
 
   observeEvent(input$scaleData, {
+    hideAll()
+
     if (input$scaleData == TRUE) {
       scaleSelected(TRUE)
     } else {
       scaleSelected(FALSE)
     }
-    hideAll()
   })
 
   observeEvent(input$invertData, {
+    hideAll()
+
     if (input$invertData == TRUE) {
       invertDf(TRUE)
     } else {
       invertDf(FALSE)
     }
-    hideAll()
   })
 
   observeEvent(input$scaleMethod, {
+    hideAll()
+
     if (input$scaleMethod == "single") {
       scaleMethod("single")
     } else {
       scaleMethod("multiple")
     }
-    hideAll()
   })
 
   # Example Table
@@ -121,43 +141,92 @@ function(input, output, session) {
     } else if (userUpload()) {
       # Valid Conditions for using CSV
       if (uploadValid()) {
-        # Update the column names to allow the user to select an algo
-        colNamesVal(getColNames())
-        updateSelectInput(session, "splineSelectAlgo", choices = c("", colNamesVal()))
-        hideAll()
+        withProgress(message = "Computing...", {
+          hideAll()
 
-        # Then generate and render the table
-        showParas()
-        show("parasDiv")
-        show("downloadDiv")
+          updateActionButton(session, "compute", label = "Loading")
+
+          disable("compute")
+          updateSelectInput(session, "splineSelectAlgo", selected = "")
+          updateRadioButtons(session, "epsilonAuto4", selected = "0")
+          updateTabsetPanel(session, "auto1And2Tabs", selected = "Merged")
+          updateTabsetPanel(session, "Goodness", selected = "goodnessPlot")
+
+
+          # Update the column names to allow the user to select an algo
+          colNamesVal(getColNames())
+          updateSelectInput(session, "splineSelectAlgo", choices = c("", colNamesVal()))
+          incProgress(0.5)
+
+
+
+          # Then generate and render the table
+          # Pregenerate the Obj and Modout. As it is in compute, whenever compute is called obj will be updated.
+          getObj0Per()
+          incProgress(0.2)
+
+
+          showParas()
+          incProgress(0.3)
+          enable("compute")
+          updateActionButton(session, "compute", label = "Compute")
+
+
+          show("parasDiv")
+          show("downloadDiv")
+        })
       }
     } else {
       # Valid Conditions for using Example File
       if (csvChoice() != 0 && !userUpload()) {
-        # Update the column names to allow the user to select an algo
-        colNamesVal(getColNames())
-        updateSelectInput(session, "splineSelectAlgo", choices = c("", colNamesVal()))
-        hideAll()
+        withProgress(message = "Computing...", {
+          hideAll()
+          updateActionButton(session, "compute", label = "Loading...")
+
+          disable("compute")
+
+          updateSelectInput(session, "splineSelectAlgo", selected = "")
+          updateRadioButtons(session, "epsilonAuto4", selected = "0")
+          updateTabsetPanel(session, "auto1And2Tabs", selected = "Merged")
+
+          # Update the column names to allow the user to select an algo
+          colNamesVal(getColNames())
+          updateSelectInput(session, "splineSelectAlgo", choices = c("", colNamesVal()))
+
+          incProgress(0.5)
 
 
-        # Then generate and render the table
-        showParas()
-        show("parasDiv")
-        show("downloadDiv")
+
+          # Then generate and render the table
+          # Pregenerate the Obj and Modout. As it is in compute, whenever compute is called obj will be updated.
+          getObj0Per()
+          incProgress(0.2)
+
+
+          showParas()
+          incProgress(0.3)
+          enable("compute")
+
+          updateActionButton(session, "compute", label = "Compute")
+
+
+          show("parasDiv")
+          show("downloadDiv")
+        })
       }
     }
   })
 
   # Upload csv + Paras Table Need to unlink them
   observeEvent(input$upload, {
+    hideAll()
     req(uploadedCsv())
     userUpload(TRUE)
     validateCsv()
-    hideAll()
   })
 
   # Shows the Paras Table post successful csv upload (or example btn)
-  showParas <- reactive({
+  showParas <- function() {
     withProgress(message = "Reading File...", {
       removeNotification("csvValidToast")
 
@@ -187,11 +256,10 @@ function(input, output, session) {
           %>% formatRound("anomalousness", digits = 0)
       )
       incProgress(0.5)
-      
 
       scrollTo("downloadDiv")
     })
-  })
+  }
 
   observeEvent(input[[ns("parasDT_rows_selected")]], {
     selected_row <- input[[ns("parasDT_rows_selected")]]
@@ -205,6 +273,10 @@ function(input, output, session) {
           generateAnomBoxplot(algo)
         })
       })
+      output$anomBoxplotText <- renderUI({
+        HTML(paste("<i>The ", algo, " algorithm is highlighted. A distant mix/max value may distort the plot.</i>"))
+      })
+
       show("anomBoxplotDiv")
       scrollTo("anomBoxplotDiv")
     })
@@ -214,6 +286,8 @@ function(input, output, session) {
 
 
   observeEvent(input$exampleFile, {
+    hideAll()
+
     choice <- switch(input$exampleFile,
       "Select Example File" = 0,
       "Anomaly Detection" = "Anomaly",
@@ -222,7 +296,12 @@ function(input, output, session) {
       "Time Series Forecasting" = "TimeSeriesForecasting",
       "Clustering" = "Clustering"
     )
-    hideAll()
+
+    if (input$exampleFile == "Time Series Forecasting") {
+      show("invertText")
+    } else {
+      hide("invertText")
+    }
 
     csvChoice(choice)
     userUpload(FALSE)
@@ -259,19 +338,19 @@ function(input, output, session) {
     withProgress(message = "Loading...", {
       output$auto1 <- renderUI({
         renderPlot({
-          generatePlot(1, epsilonIn = 0)
+          generatePlot(1, epsilonIn = "0")
         })
       })
 
       incProgress(0.5)
       output$auto2 <- renderUI({
         renderPlot({
-          generatePlot(2, epsilonIn = 0)
+          generatePlot(2, epsilonIn = "0")
         })
       })
 
       # Output Options lets you load a plot when it isn't yet rendered. So use it in tabs.
-      outputOptions(output, "auto2", suspendWhenHidden = FALSE)
+      # outputOptions(output, "auto2", suspendWhenHidden = FALSE)
 
       incProgress(0.5)
 
@@ -285,7 +364,7 @@ function(input, output, session) {
     withProgress(message = "Loading...", {
       output$auto3 <- renderUI({
         renderPlot({
-          generatePlot(3, epsilonIn = 0)
+          generatePlot(3, epsilonIn = "0")
         })
       })
 
@@ -310,28 +389,22 @@ function(input, output, session) {
   observeEvent(input$resetSpline, {
     output$auto3 <- renderUI({
       renderPlot({
-        generatePlot(3, epsilonIn = 0)
+        generatePlot(3, epsilonIn = "0")
       })
     })
   })
 
-  # Plot Type 4 No Epsilon + with
+  # Plot Type 4
   observeEvent(input$auto3Cont, {
     withProgress(message = "Loading...", {
       output$auto4 <- renderUI({
         renderPlot({
-          generatePlot(4, epsilonIn = 0)
-        })
-      })
-      incProgress(0.5)
-      output$auto4Ep <- renderUI({
-        renderPlot({
-          generatePlot(4, epsilonIn = 2)
+          generatePlot(4, epsilonIn = input$epsilonAuto4)
         })
       })
       incProgress(0.5)
 
-      outputOptions(output, "auto4Ep", suspendWhenHidden = FALSE)
+      # outputOptions(output, "auto4Ep", suspendWhenHidden = FALSE)
       show("auto4Div")
     })
     scrollTo("auto4Div")
@@ -365,9 +438,9 @@ function(input, output, session) {
       })
       incProgress(0.2)
 
-      outputOptions(output, "modEff1", suspendWhenHidden = FALSE)
-      outputOptions(output, "modEff2", suspendWhenHidden = FALSE)
-      outputOptions(output, "modEff3", suspendWhenHidden = FALSE)
+      # outputOptions(output, "modEff1", suspendWhenHidden = FALSE)
+      # outputOptions(output, "modEff2", suspendWhenHidden = FALSE)
+      # outputOptions(output, "modEff3", suspendWhenHidden = FALSE)
 
       show("goodnessEffDiv")
       show("downloadDiv")

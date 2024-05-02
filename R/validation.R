@@ -7,7 +7,7 @@ validateCsv <- function() {
 
   # Resets Document if Validation Fails.
   if (any(!isNumericOnly)) {
-    hide("parasDiv")
+    hideAll()
     userUpload(FALSE)
     showNotification(
       "Upload failed. All fields besides the Column Name must be Numeric.",
