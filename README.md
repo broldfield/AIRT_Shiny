@@ -1,6 +1,9 @@
 # AIRT Shiny
 
 This is a Shiny Application for the AIRT R Package. AIRT Shiny should be plug and play with shinyapps.io
+# Installation
+Fork the repositry, then clone it. You can then use the AIRT_Shiny folder as a project folder in RStudio.
+While either UI.R or Server.R is open, at the section where you run code there would be a button to run the website.
 
 ## Modifying Code
 
