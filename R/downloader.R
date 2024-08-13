@@ -8,7 +8,7 @@ output$downlBtn <- downloadHandler(
                      disable("downlBtn")
 
                      ggsave("Plot 1 - Merged.png",
-                            plot = generatePlot(1, "0"),
+                            plot = generate_plot(1, "0"),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -16,7 +16,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Plot 2 - Seperate.png",
-                            plot = generatePlot(2, "0"),
+                            plot = generate_plot(2, "0"),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -24,7 +24,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Plot 3 - Spline.png",
-                            plot = generatePlot(3, "0"),
+                            plot = generate_plot(3, "0"),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -32,7 +32,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Plot 4 - Epsilon 0.png",
-                            plot = generatePlot(4, "0"),
+                            plot = generate_plot(4, "0"),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -40,14 +40,14 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Plot 4 - Epsilon 0.01.png",
-                            plot = generatePlot(4, "0.01"),
+                            plot = generate_plot(4, "0.01"),
                             height = 1080,
                             width = 1920,
                             units = "px",
                             device = "png"
                      )
                      ggsave("Plot 4 - Epsilon 0.03.png",
-                            plot = generatePlot(4, "0.03"),
+                            plot = generate_plot(4, "0.03"),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -55,7 +55,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Heat Map.png",
-                            plot = generateHeatMap(),
+                            plot = generate_heatmap(),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -63,7 +63,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Goodness.png",
-                            plot = generateGoodness(),
+                            plot = generate_goodness(),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -71,7 +71,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Model Eff 1.png",
-                            plot = generateModelEff(2),
+                            plot = generate_model_eff(2),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -79,7 +79,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Model Eff 2.png",
-                            plot = generateModelEff(3),
+                            plot = generate_model_eff(3),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -87,7 +87,7 @@ output$downlBtn <- downloadHandler(
                      )
                      incProgress(0.1)
                      ggsave("Model Eff 3.png",
-                            plot = generateModelEff(3),
+                            plot = generate_model_eff(3),
                             height = 1080,
                             width = 1920,
                             units = "px",
@@ -95,8 +95,8 @@ output$downlBtn <- downloadHandler(
                      )
 
                      incProgress(0.1)
-                     write.csv(generateParasTable(), "IRT_Params.csv")
-                     write.csv(generateAnomTable(), "AIRT_Attributes.csv")
+                     write.csv(generate_paras_table(), "IRT_Params.csv")
+                     write.csv(generate_anom_table(), "AIRT_Attributes.csv")
 
                      enable("downlBtn")
 

@@ -1,8 +1,6 @@
 library(shiny)
 library(shinyjs)
-
-library(devtools)
-install_github("sevvandi/airt")
+library(shinyWidgets)
 
 library(airt)
 library(ggplot2)
@@ -52,7 +50,7 @@ fluidPage(
       style = "margin: 15px;",
       div(
         style = "border-bottom-style: solid; border-bottom-color: lightgrey;",
-        titlePanel("AIRT Processor")
+        titlePanel("AIRT App for Algorithm Evaluation")
       ),
       br(),
       div(
@@ -66,14 +64,29 @@ fluidPage(
             style = "max-width: 90%;",
             "The ",
             em("airt"),
-            " package is used to evaluate the performance of a portfolio of algorithms using ",
+            " R package is used to evaluate the performance of a portfolio of algorithms using ",
             strong("Item Response Theory"),
             " (IRT). ",
             br(),
-            "AIRT currently fits to two data models: Continuous and Polytomous (categorical).",
-            br(),
-            "This application processes a .csv portfolio of algorithms and presents analysis for Continuous datasets."
+            "We will look at performance datasets where the performance is a continuous variable, for example, an accuracy measure. ",
           ),
+           h5("Citation"),
+            p(
+              "The airt paper can be found",
+              tags$a(href = "https://jmlr.org/papers/v24/20-1318.html", "here"),
+              ". If you are using this for academic purposes, the citation can be found below."
+            ),
+          
+          div(
+            style = "background-color: #f5f5f5; border-radius: 5px; padding: 10px; margin-bottom: 20px;",
+           
+            p(
+              "Kandanaarachchi, S., & Smith-Miles, K. (2023). Comprehensive algorithm portfolio evaluation using item response theory.",
+              em("Journal of Machine Learning Research"),
+              ", 24(177), 1-52."
+            ),
+          ), 
+         
           h5("Contributions"),
           p("AIRT Shiny App Creator: Brodie Oldfield (Data61, CSIRO)"),
           p(
@@ -97,7 +110,7 @@ fluidPage(
       # Example Table
       p(
         style = "max-width: 900px;",
-        "Below is an example of a valid Continuous Dataset. The Column Name contains the Algorithm's name, and each Row contains a numeric performance metric without a Row Name."
+        "You can input your performance dataset to the AIRT App. But it has to be in the correct format. We've given an example below of a valid Continous Dataset. The Column Name contains the Algorithm's name, and each Row contains a numeric performance metric. There should be no row names."
       ),
       div(
         style = "margin: auto; max-width: 500px;",
@@ -111,14 +124,15 @@ fluidPage(
         style = "border-bottom-style: dotted; border-bottom-color: #edebeb; ",
         h3("Input"),
         p(
-          "Upload .csv or use an example file.",
+          "You can upload a csv file or to get started use one of our examples taken from UniMelb's MATILDA platform.",
           br(),
           strong("Scale Data:"), "Data is by default scaled between 0 and 1. Uncheck to disable.",
           br(),
-          strong("Invert Data:"), "Inverts the dataset. Apply this when lower values indicate better performance in your data.",
+          strong("Invert Data:"), "Inverts the dataset.",
           br(),
           strong("Scale Method:"), "Whether to apply scaling per column or for all data. Disabled when Scale Data is disabled."
         ),
+        p("The AIRT App takes good performance to be values that are larger and poor performance to be values that are smaller in your dataset.  If this is not the case, for example, as your performance values you've got time taken to complete the task, or the mean square error, then the values need to be inverted."),
         h5("Modifiers"),
         fluidRow(
           column(
@@ -132,7 +146,7 @@ fluidPage(
           column(
             4,
             radioButtons(
-              "scaleMethod",
+              "scale_method",
               NULL,
               c(
                 "All" = "multiple",
@@ -205,16 +219,15 @@ fluidPage(
           id = "parasDiv",
           class = "hidden",
           style = "padding-bottom: 50px; padding-top: 25px;",
-          h3(id = "parasTitle", "Algorithm Performance Data"),
+          h3(id = "parasTitle", "Traditional IRT parameters"),
           p(
             style = "max-width: 900px;",
-            "This table displays traditional IRT parameters for each algorithm, where ",
-            em("a"),
-            " denotes discrimination, ",
-            em("b"),
-            " denotes difficulty, and ",
-            em("alpha"),
-            "  is a scaling parameter."
+            "This table gives the traditional IRT parameters ",
+            em("discrimination, "),
+            em("difficulty, "),
+            "and a ",
+            em("scaling parameter"),
+            " for each algorithm."
           ),
           div(
             style = "margin: auto; max-width: 500px ;",
@@ -242,17 +255,15 @@ fluidPage(
           h3("AIRT Attributes"),
           h5("Anomalous"),
           p(
-            "The anomalous attribute signifies an algorithm as anomalous (1) or standard (0). Anomalous algorithms excel with difficult datasets but struggle with easy datasets. Standard algorithms perform well with easy datasets and poorly with difficult ones."
+            "We say an algorithm is anomalous if it excels with difficult problems but struggles with easy problems. Normal or non-anomalous algorithms work the other way, they perform well for easy problems but poorly with difficult problems. The anomalous attribute is set to 1 if the algorithm is anomalous, otherwise it is set to 0."
           ),
           h5("Difficultly limit"),
           p(
-            "The difficultly limit attribute tells us the highest difficulty level the algorithm can handle. If an algorithm has a high difficulty limit value, then it can handle very hard problems, while a low value is less performant on harder questions.",
-            br(),
-            "Additionally, a negative difficulty limit value indicates that the algorithm is anomalous."
+            "The difficultly limit attribute tells us the highest difficulty level the algorithm can handle. If an algorithm has a high difficulty limit value, then it can handle very hard problems, while a low value is less performant on harder questions."
           ),
           h5("Consistency"),
           p(
-            "The consistency attribute indicates an algorithm's stability in its difficulty level. A low consistency Algorithm has fluctuating performance while a high consistency shows limited fluctuations."
+            "The consistency attribute indicates an algorithm's stability. A low consistency algorithm has fluctuating performance while high consistency algorithms give more consistent results, that is, shows limited fluctuations."
           ),
           br(),
           div(
@@ -291,7 +302,7 @@ fluidPage(
             style = "max-width: 900px;",
             "If the line has a positive slope, then the algorithm is not anomalous.",
             br(),
-            "The thinner lines are more discriminating.",
+            "The thinner lines are more discriminating algorithms.",
             br(),
             "Algorithms with no or blurry lines are more consistent."
           ),
@@ -327,12 +338,13 @@ fluidPage(
           id = "auto3Div",
           class = "hidden",
           style = "padding-bottom: 50px; min-height: 600px;",
-          h3("Spline"),
+          h3("Splines"),
           p(
-            "To get a better sense of which algorithms are better for which difficulty values, we can fit smoothing splines to the above data."
+            "To get a better sense of which algorithms are better for which difficulty values, we can fit smoothing splines to the above data.",
+            "You can select an algorithm from the drop-down box below to see it separately and the checkbox removes the error bands."
           ),
           div(
-            style = "display: flex; align-items: flex-end;",
+            style = "display: flex; align-items: flex-end; width: 100%;",
             div(
               style = "",
               selectInput(
@@ -343,13 +355,21 @@ fluidPage(
               )
             ),
             div(
-              style = "padding-bottom: 15px; padding-left: 10px;",
+              style = "padding-bottom: 15px; padding-left: 10px; ",
               actionButton("resetSpline", "Reset Selection")
+            ),
+            div(
+              style = "padding-bottom: 15px; padding-left: 10px; justify-self: flex-end; justify-text: flex-end;",
+              checkboxInput("seCheckBox", "Show Error Bands", value = TRUE),
+              float = "right", align = "right", direction = "rtl"
             )
           ),
           uiOutput("auto3"),
           # create a dropdown menu for the user to select the algorithm
-
+          p(
+            "Generally, curves on top signify better algorithms and curves at the bottom signify weaker algorithms. But this is not always straightforward. For some difficulty levels, some algorithms are on top (better) and for some other difficulty levels, others may be on top.",
+          ),
+          br(),
           actionButton("auto3Cont", "Next"),
           br(),
         )
@@ -363,16 +383,29 @@ fluidPage(
           style = "padding-bottom: 50px; min-height: 600px;",
           h3("Strengths and Weaknesses of Algorithms"),
           p(
+            "When an algorithm is on the top for a certain difficulty level, we call it a strength of the algorithm. The algorithm is strong for problems of that difficulty level. Similarly, when an algorithm curve is in the bottom it is a weakness.  So, algorithms have different strengths and weaknesses in the problem difficulty spectrum.",
             "To see the best and worst algorithms for a given problem difficulty, the splines above are used to compute the proportion of the Latent Trait Spectrum occupied by each algorithm. This is called the Latent Trait Occupancy (LTO).",
             br(),
-            "The selectable Epsilon value, which when Non-Zero, shows the algorithms that overlap in the same problem difficulty. A higher Epsilon value increases the range of shown algorithms."
+            br(),
+            "We have a parameter epsilon when we talk about strengths and weaknesses. When epsilon = 0, we only take the topmost curve for each difficulty value. But, this is unrealistic. For certain difficulty values there may be multiple algorithms that are good. We achieve this by giving a little bit of leeway. We make epsilon non-zero."
           ),
           fluidRow(
             column(
               1,
               div(
                 style = "height: 100%; display: flex; align-items: center;",
-                radioButtons("epsilonAuto4", "Epsilon:", choices = c("0", "0.01", "0.03"))
+                shinyWidgets::noUiSliderInput(
+                  "epsilonAuto4",
+                  label = NULL,
+                  min = 0,
+                  max = 0.1,
+                  value = 0,
+                  step = 0.01,
+                  orientation = "vertical",
+                  height = "300px",
+                  width = "100px",
+                  color = "#007ba7"
+                )
               )
             ),
             column(
@@ -381,7 +414,23 @@ fluidPage(
             )
           ),
           p(
-            "We can see the Latent Trait Occupancy in this graph. Each algorithm occupies parts of the Latent Trait Spectrum as shown by a bar. This shows that for some dataset easiness values certain algorithms perform best in that difficulty, or that they are weaker than others.",
+            "We can see the strengths and weaknesses in this graph. Each algorithm occupies parts of the Problem Difficulty spectrum as shown by a bar. This shows that for some problem difficulty values certain algorithms perform best, or that they are weaker than others (Weakness plot).",
+          ),
+          p(
+            "We can use the strengths and weaknesses to compute the proportion of the Latent Trait Spectrum (problem difficulty spectrum) occupied by each algorithm. This is called the Latent Trait Occupancy (LTO)."
+          ),
+          div(
+            style = "justify-text: left; display:flex; justify-content: center; padding-top: 20px; padding-bottom: 20px;",
+            div(
+              style = "padding-right: 20px;",
+              h5("Strength LTO"),
+              uiOutput("strengthLTO")
+            ),
+            div(
+              style = "padding-left: 20px;",
+              h5("Weaknesses LTO"),
+              uiOutput("weaknessLTO")
+            ),
           ),
           actionButton("auto4Cont", "Next"),
         )
@@ -392,12 +441,12 @@ fluidPage(
         div(
           id = "goodnessEffDiv",
           class = "hidden",
-          style = "padding-bottom: 50px; min-height: 600px;",
-          h2(
-            style = "color: black;",
+          style = "padding-bottom: 50px; min-height: 600px; padding-top: 5px; border-top-style: dotted; border-top-color: #edebeb;",
+          h3(
+            style = "",
             "Is this a good model?"
           ),
-          h3("Model Goodness Metrics"),
+          h5("Model Goodness Metrics"),
           p(
             "All this is good, but is the fitted IRT model good? To check this, we have a couple of measures."
           ),

@@ -1,31 +1,66 @@
 # Generates plots, epsilon != to use epsilon.
-generatePlot <- function(plotNum, epsilonIn = "0") {
+generate_plot <- function(plot_num, epsilon_str = "0") {
   obj <- NULL
-  obj <- switch(epsilonIn,
-    "0" = getObj0Per(),
-    "0.01" = getObj1Per(),
-    "0.03" = getObj3Per(),
-    getObj0Per()
-  )
 
-  autoplot(obj, plottype = plotNum, epsilon = as.numeric(epsilonIn)) + theme_pander(boxes = TRUE, gc = "lightgray")
+  if (epsilon_str == "0") {
+    obj <- get_obj()
+  } else {
+    obj <- get_obj_with_epsilon(epsilon_str)
+  }
+
+  if (plot_num == 4) {
+    LTOStr <- get_LTO_strength(obj)
+    LTOWeak <- get_LTO_weak(obj)
+
+
+    output$strengthLTO <- renderUI({
+      DT::datatable(LTOStr,
+        selection = "single",
+        rownames = FALSE,
+        options = list(
+          pageLength = 5,
+          searching = FALSE,
+          paging = TRUE,
+          lengthChange = FALSE,
+          info = FALSE,
+          ordering = FALSE
+        )
+      ) %>% formatRound(c("Proportion"), digits = 4)
+    })
+    output$weaknessLTO <- renderUI({
+      DT::datatable(LTOWeak,
+        selection = "single",
+        rownames = FALSE,
+        options = list(
+          pageLength = 5,
+          searching = FALSE,
+          paging = TRUE,
+          lengthChange = FALSE,
+          info = FALSE,
+          ordering = FALSE
+        )
+      ) %>% formatRound(c("Proportion"), digits = 4)
+    })
+  }
+
+  autoplot(obj, plottype = plot_num, epsilon = as.numeric(epsilon_str)) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
 
-generateHeatMap <- function() {
-  modout <- getModout()
+generate_heatmap <- function() {
+  modout <- get_modout()
   obj <- heatmaps_crm(modout)
   autoplot(obj) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
-generateParasTable <- function() {
-  modout <- getModout()
-  paras <- getParas()
+generate_paras_table <- function() {
+  modout <- get_modout()
+  paras <- get_paras()
   return(paras)
 }
 
-generateAnomTable <- function() {
-  modout <- getModout()
+generate_anom_table <- function() {
+  modout <- get_modout()
   cbind.data.frame(
     anomalousness = modout$anomalous,
     consistency = modout$consistency,
@@ -33,20 +68,20 @@ generateAnomTable <- function() {
   )
 }
 
-generateGoodness <- function() {
-  goodModel <- getModGood()
+generate_goodness <- function() {
+  goodModel <- get_mod_good()
   autoplot(goodModel) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
 
-generateModelEff <- function(plotType) {
-  modelEff <- getModEff()
+generate_model_eff <- function(plotType) {
+  modelEff <- get_mod_eff()
   autoplot(modelEff, plottype = plotType) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
 # Create Boxplots
-generateAnomBoxplot <- function(algoName) {
-  modout <- getModout()
+generate_anom_boxplot <- function(algoName) {
+  modout <- get_modout()
   anomDT <- cbind.data.frame(
     anomalousness = modout$anomalous,
     consistency = modout$consistency,
@@ -99,8 +134,8 @@ generateAnomBoxplot <- function(algoName) {
 
 # Create graph for single Algo
 # Autoplot Type 1
-generatePlot1 <- function() {
-  dfl <- getLongObj()
+generate_plot_1 <- function() {
+  dfl <- get_long_obj()
   manual_plot1 <- ggplot(dfl, aes(Latent_Trait, value)) +
     geom_point(aes(color = Algorithm)) +
     xlab("Problem Difficulty") +
@@ -109,29 +144,36 @@ generatePlot1 <- function() {
     theme_bw() +
     theme(legend.position = "right", legend.box = "vertical")
 
-  highlightPlot1 <- plot1 + gghighlight(Algorithm == "NB", keep_scales = TRUE)
+  highlightPlot1 <- plot1 + gghighlight(Algorithm == "NB", keep_scales = TRUE, unhighlighted_params = list(color = "black"))
 }
 
-generateSplinePlot <- function(algoName) {
+generate_spline_plot <- function(algoName, se = TRUE) {
   latenttrait <- Latent_Trait <- value <- Algorithm <- NULL
-  dfl <- getLongObj()
+  dfl <- get_long_obj()
 
   g1 <- ggplot(dfl, aes(Latent_Trait, value)) +
-    geom_smooth(aes(color = Algorithm), se = TRUE, method = "gam", formula = y ~ s(x, bs = "cs")) +
+    geom_smooth(aes(color = Algorithm), se = se, method = "gam", formula = y ~ s(x, bs = "cs")) +
     xlab("Problem Difficulty") +
     ylab("Performance") +
     theme_bw() +
     theme_pander(boxes = TRUE, gc = "lightgray") +
-    theme(legend.position = "bottom", legend.box = "horizontal")
+    theme(legend.position = "right", legend.box = "vertical")
 
-  g2 <- g1 + gghighlight(Algorithm == algoName)
+  g2 <- g1 + gghighlight(Algorithm == algoName, unhighlighted_params = list(color = "black"))
   return(g2)
 }
 
-# Not used ATM
-generateStrTable <- function() {
-  obj2 <- getObj5Per()
-  datatable(obj2$strengths$proportions)
-}
+generate_splines <- function(se = TRUE) {
+  latenttrait <- Latent_Trait <- value <- Algorithm <- NULL
+  dfl <- get_long_obj()
 
-# Manually recreating Plots 1 and 3 for.
+  g1 <- ggplot(dfl, aes(Latent_Trait, value)) +
+    geom_smooth(aes(color = Algorithm), se = se, method = "gam", formula = y ~ s(x, bs = "cs")) +
+    xlab("Problem Difficulty") +
+    ylab("Performance") +
+    theme_bw() +
+    theme_pander(boxes = TRUE, gc = "lightgray") +
+    theme(legend.position = "right", legend.box = "vertical")
+
+  return(g1)
+}
