@@ -9,15 +9,16 @@ load("data/TimeSeriesForecasting.rda")
 load("data/Clustering.rda")
 
 function(input, output, session) {
+  router_server()
   # With the DT package, you can use "x_rows_selected" to get the clicked on row.
   # Where x = the renderDT's output ID
   # When using renderDT in a renderUI, you need to use the session$ns to construct the ID
   ns <- session$ns
 
-  source("plotting.R", local = TRUE)
-  source("getters.R", local = TRUE)
-  source("validation.R", local = TRUE)
-  source("downloader.R", local = TRUE)
+  source("./helper_files/plotting.R", local = TRUE)
+  source("./helper_files/getters.R", local = TRUE)
+  source("./helper_files/validation.R", local = TRUE)
+  source("./helper_files/downloader.R", local = TRUE)
 
   thematic_shiny(font = "Lato")
 
@@ -37,6 +38,12 @@ function(input, output, session) {
 
   se_ticked <- reactiveVal(TRUE)
   spline_last_clicked <- reactiveVal("Full")
+  
+  #histdata <- rnorm(500)
+  #output$dashboard_plot <- renderPlot({
+  #  data <- histdata[seq_len(5)]
+  #  hist(data)
+  #})
 
   # Handles Scrolling to Div. Triggered in observes by btns.
   scroll_to <- function(eleId) {
@@ -292,6 +299,9 @@ function(input, output, session) {
 
     csv_choice(choice)
     user_upload(FALSE)
+    computeSuccess(FALSE)
+    
+    sidebarPlotChoice(" ")
     # Prevent blank csv from being loaded on startup
   })
 
@@ -443,4 +453,183 @@ function(input, output, session) {
 
     scroll_to("goodnessEffDiv")
   })
+  
+  # Dashboard functions
+  ## Computing
+  computeSuccess <- reactiveVal(FALSE)
+  
+  observeEvent(input$computeDash, {
+    removeNotification("nothingSelected")
+    # Check if User has pressed the button without any inputs.
+    if (csv_choice() == 0 && !user_upload()) {
+      showNotification(
+        "Must upload a valid file or select an Example.",
+        duration = NULL,
+        id = "nothingSelected"
+      )
+      hide_all()
+      computeSuccess(FALSE)
+      hide_sidebar()
+      hide_options()
+    } else if (user_upload()) {
+      # Valid Conditions for using CSV
+      if (upload_valid()) {
+        withProgress(message = "Computing...", {
+          hide_all()
+          
+          updateActionButton(session, "compute", label = "Loading")
+          
+          disable("compute")
+  
+          incProgress(0.5)
+          
+          updateRadioButtons(session, "dashSliderSW", selected = "0")
+          
+          # Then generate and render the table
+          # Pregenerate the Obj and Modout. As it is in compute, whenever compute is called obj will be updated.
+          get_obj()
+          incProgress(0.2)
+          
+          incProgress(0.3)
+          enable("compute")
+          updateActionButton(session, "compute", label = "Compute")
+          computeSuccess(TRUE)
+          show_sidebar()
+        })
+      }
+    } else {
+      # Valid Conditions for using Example File
+      if (csv_choice() != 0 && !user_upload()) {
+        withProgress(message = "Computing...", {
+          hide_all()
+          updateActionButton(session, "compute", label = "Loading...")
+          
+          disable("compute")
+
+          
+          incProgress(0.5)
+          
+          # Then generate and render the table
+          # Pregenerate the Obj and Modout. As it is in compute, whenever compute is called obj will be updated.
+          get_obj()
+          incProgress(0.2)
+          
+          updateRadioButtons(session, "dashSliderSW", selected = "0")
+          
+          incProgress(0.3)
+          enable("compute")
+          
+          updateActionButton(session, "compute", label = "Compute")
+          computeSuccess(TRUE)
+          show_sidebar()
+
+        })
+      }
+    }
+  })
+  
+  ## Sidebar
+  sidebarPlotChoice <- reactiveVal(0)
+  
+  observeEvent(input$sidebarPlotSelect, {
+    sidebarPlot <- switch(input$sidebarPlotSelect,
+                     " " = 0,
+                     "Heatmap" = "Heatmap",
+                     "Problem Diff - Merged"= "Merged",
+                     "Problem Diff - Sep"= "Sep",
+                     "Splines"= "Splines",
+                     "Strength and Weakness"= "StrengthWeakness",
+                     "Model Goodness - Goodness"= "Goodness",
+                     "Model Goodness - Actual"= "Actual",
+                     "Model Goodness - Predicted"= "Predicted",
+                     "Model Goodness - A vs P" = "AvsP"
+    )
+    
+    if (input$sidebarPlotSelect == "StrengthWeakness") {
+      show("options")
+    } else {
+      hide("options")
+    }
+    
+    sidebarPlotChoice(sidebarPlot)
+  })
+  
+  #Main plot
+  observeEvent(sidebarPlotChoice(),
+               if (computeSuccess() == TRUE) {
+                 if (sidebarPlotChoice() == "Heatmap") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_heatmap()
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Merged") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_plot(1)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Sep") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_plot(2)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Splines") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_plot(3)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "StrengthWeakness") {
+                   show_options()
+                   
+                   output$dashboard_plot <- renderPlot({
+                     generate_plot(4, input$dashSliderSW)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Goodness") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_goodness()
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Actual") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_model_eff(1)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "Predicted") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_model_eff(2)
+                   })
+                 }
+                 
+                 if (sidebarPlotChoice() == "AvsP") {
+                   output$dashboard_plot <- renderPlot({
+                     generate_model_eff(3)
+                   })
+                 }
+               }
+             )
+  ## Hiding sidebar or options
+  hide_sidebar <- function() {
+    hide(id = "sidebar")
+  }
+  show_sidebar <- function() {
+    show(id = "sidebar")
+  }
+  hide_options <- function() {
+    hide(id = "options")
+  }
+  show_options <- function() {
+    show(id = "options")
+  }
+  
+  
+  
+  
+  
 }

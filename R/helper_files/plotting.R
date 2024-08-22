@@ -42,8 +42,10 @@ generate_plot <- function(plot_num, epsilon_str = "0") {
       ) %>% formatRound(c("Proportion"), digits = 4)
     })
   }
+  
 
-  autoplot(obj, plottype = plot_num, epsilon = as.numeric(epsilon_str)) + theme_pander(boxes = TRUE, gc = "lightgray")
+  
+autoplot(obj, plottype = plot_num, epsilon = as.numeric(epsilon_str)) + theme_pander(boxes = TRUE, gc = "lightgray")
 }
 
 
